@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using Carlos;
 
 namespace brolive
 {
@@ -25,7 +26,10 @@ namespace brolive
         Vector3 currentTargetNodePosition;
         int pathNodeIndex = 0;
         Vector3 targetVelocity;
-        bool inMeleeRange = false;
+        public bool inMeleeRange = false;
+        bool canMove;
+
+        StateMachine myStateMachine;
 
         // Start is called before the first frame update
         void Start()
@@ -34,6 +38,9 @@ namespace brolive
             player = FindObjectOfType<PlayerLogic>().transform;
             _rigidbody = GetComponent<Rigidbody>();
             _transform = transform;
+
+            myStateMachine = new StateMachine(this);
+            myStateMachine.ChangeState(new EnemyIdleState(myStateMachine));
         }
 
         // Update is called once per frame
@@ -41,7 +48,7 @@ namespace brolive
         {
             currentStateElapsed += Time.deltaTime;
 
-            switch (state)
+            /*switch (state)
             {
                 case EnemyStates.idle:
                     UpdateIdle();
@@ -57,7 +64,9 @@ namespace brolive
                 case EnemyStates.dead:
                     UpdateDead();
                     break;
-            }
+            }*/
+
+            myStateMachine.Update();
         }
 
         private void FixedUpdate()
@@ -65,7 +74,7 @@ namespace brolive
             _rigidbody.linearVelocity = targetVelocity;
         }
 
-        void UpdateIdle()
+        /*void UpdateIdle()
         {
             //Debug.Log("in idle");
 
@@ -74,19 +83,19 @@ namespace brolive
                 if (inMeleeRange)
                     EnterMelee();
                 else
-                    AttemptBeginPursue();
+                    //AttemptBeginPursue();
             }
-        }
+        }*/
 
-        bool AttemptBeginPursue()
+        public bool AttemptBeginPursue(float elapsed)
         {
             //Debug.Log("attempting to pursue");
 
             if (AttemptMakePathToPlayer())
             {
                 pathNodeIndex = 0;
-                state = EnemyStates.pursue;
-                currentStateElapsed = 0;
+                //state = EnemyStates.pursue;
+                elapsed = 0;
 
                 return true;
             }
@@ -96,56 +105,64 @@ namespace brolive
             return false;
         }
 
-        void UpdatePursue()
+        public void UpdatePursue(float elapsed)
         {
             //Debug.Log("in pursue");
+            
+                currentTargetNodePosition = navigator.PathNodes[pathNodeIndex];
 
-            currentTargetNodePosition = navigator.PathNodes[pathNodeIndex];
+                //Debug.Log("current target position is " + currentTargetNodePosition + " at index " + pathNodeIndex);
 
-            //Debug.Log("current target position is " + currentTargetNodePosition + " at index " + pathNodeIndex);
+                Vector3 dirToNode = (currentTargetNodePosition - _transform.position);//.normalized;
+                dirToNode.y = 0;
+                dirToNode.Normalize();
 
-            Vector3 dirToNode = (currentTargetNodePosition - _transform.position);//.normalized;
-            dirToNode.y = 0;
-            dirToNode.Normalize();
+                _transform.forward = dirToNode;
 
-            _transform.forward = dirToNode;
+                float distToNode = Vector3.Distance(currentTargetNodePosition, _transform.position);
 
-            float distToNode = Vector3.Distance(currentTargetNodePosition, _transform.position);
+                //Debug.Log("distance to node: " + distToNode);
 
-            //Debug.Log("distance to node: " + distToNode);
-
-            if (distToNode < 3f)
-            {
-                //Debug.Log("close to node");
-                pathNodeIndex++;
-
-                if (pathNodeIndex >= navigator.PathNodes.Count)
+                if (distToNode < 3f)
                 {
-                    pathNodeIndex = 0;
-                    AttemptMakePathToPlayer();
-                    return;
+                    //Debug.Log("close to node");
+                    pathNodeIndex++;
+
+                    if (pathNodeIndex >= navigator.PathNodes.Count)
+                    {
+                        pathNodeIndex = 0;
+                        AttemptMakePathToPlayer();
+                        return;
+                    }
+
                 }
 
-            }
+                /*if (inMeleeRange)
+                {
+                    // do melee attack
+                    EnterMelee();
+                    return;
+                }*/
 
-            if (inMeleeRange)
-            {
-                // do melee attack
-                EnterMelee();
-                return;
-            }
+                targetVelocity = _transform.forward * speed;
+                targetVelocity.y = _rigidbody.linearVelocity.y;
 
-            targetVelocity = _transform.forward * speed;
-            targetVelocity.y = _rigidbody.linearVelocity.y;
-
-            if (currentStateElapsed > 1) // rebuild path every half second
-            {
-                pathNodeIndex = 1;
-                AttemptMakePathToPlayer();
-            }
+                if (elapsed > 1) // rebuild path every half second
+                {
+                    pathNodeIndex = 1;
+                    AttemptMakePathToPlayer();
+                }
+            
         }
 
-        void EnterMelee()
+        public void TurnToPlayer()
+        {
+            var dirToPlayer = (player.transform.position - transform.position).normalized;
+            dirToPlayer.y = 0;
+            transform.forward = dirToPlayer;
+        }
+
+        public void EnterMelee()
         {
             //Debug.Log("Enter melee");
             // animator.setTrigger("melee");
@@ -156,6 +173,11 @@ namespace brolive
             state = EnemyStates.melee;
             currentStateElapsed = 0;
 
+            StartCoroutine(HandleMelee());
+        }
+
+        public void SwordSwing()
+        {
             StartCoroutine(HandleMelee());
         }
 
