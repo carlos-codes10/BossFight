@@ -20,7 +20,7 @@ public class Damageable : MonoBehaviour
     public UnityEvent OnDeath;
     public UnityEvent<int, int> OnHealthChanged;
 
-    int currentHealth;
+    public int currentHealth;
     float timeSinceHit = 0;
 
     // Start is called before the first frame update

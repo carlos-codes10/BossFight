@@ -15,6 +15,10 @@ namespace brolive
     {
         [SerializeField] float speed;
         [SerializeField] GameObject meleeWeapon;
+        [SerializeField] Animator myAnimator;
+        [SerializeField] Damageable damageable;
+        [SerializeField] GameObject spellPosition;
+        [SerializeField] GameObject rockProjectile;
 
         Navigator navigator;
         Transform _transform;
@@ -29,7 +33,10 @@ namespace brolive
         public bool inMeleeRange = false;
         bool canMove;
 
+
         StateMachine myStateMachine;
+        StateMachine myStateMachinePhase2;
+        Vector3 magDirection;
 
         // Start is called before the first frame update
         void Start()
@@ -38,9 +45,10 @@ namespace brolive
             player = FindObjectOfType<PlayerLogic>().transform;
             _rigidbody = GetComponent<Rigidbody>();
             _transform = transform;
-
             myStateMachine = new StateMachine(this);
+            myStateMachinePhase2 = new StateMachine(this);
             myStateMachine.ChangeState(new EnemyIdleState(myStateMachine));
+            myStateMachinePhase2.ChangeState(new EnemyIdleState2(myStateMachine));
         }
 
         // Update is called once per frame
@@ -65,13 +73,23 @@ namespace brolive
                     UpdateDead();
                     break;
             }*/
-
-            myStateMachine.Update();
+            if ( damageable.currentHealth > 31)
+            {
+                myStateMachine.Update();
+                Debug.Log("BOSS PHASE 1");
+            }
+            else if (damageable.currentHealth <= 30)
+            {
+                myStateMachinePhase2.Update();
+                Debug.Log("BOSS PHASE 2");
+            }
+                myAnimator.SetFloat("walkSpeed", magDirection.magnitude);
         }
 
         private void FixedUpdate()
         {
             _rigidbody.linearVelocity = targetVelocity;
+
         }
 
         /*void UpdateIdle()
@@ -108,7 +126,6 @@ namespace brolive
         public void UpdatePursue(float elapsed)
         {
             //Debug.Log("in pursue");
-            
                 currentTargetNodePosition = navigator.PathNodes[pathNodeIndex];
 
                 //Debug.Log("current target position is " + currentTargetNodePosition + " at index " + pathNodeIndex);
@@ -162,6 +179,15 @@ namespace brolive
             transform.forward = dirToPlayer;
         }
 
+        public void MagnitudeWalk()
+        {
+            magDirection = myAnimator.transform.forward;
+        }
+
+        public void MagnitudeIdle()
+        {
+            magDirection = Vector3.zero;
+        }
         public void EnterMelee()
         {
             //Debug.Log("Enter melee");
@@ -176,18 +202,34 @@ namespace brolive
             StartCoroutine(HandleMelee());
         }
 
-        public void SwordSwing()
+        public void Punch()
         {
+            targetVelocity = Vector3.zero;
             StartCoroutine(HandleMelee());
         }
 
+   
         IEnumerator HandleMelee()
         {
-            //timeSinceLastMelee = 0;
+            
+            myAnimator.SetTrigger("punch");
+            yield return new WaitForSeconds(0.2f);
             meleeWeapon.SetActive(true);
-            meleeWeapon.GetComponent<Animator>().SetTrigger("swing");
-            yield return new WaitForSeconds(0.25f);
+            yield return new WaitForSeconds(0.2f);
             meleeWeapon.SetActive(false);
+        }
+
+        public void CastRockSpell()
+        {
+            StartCoroutine(HandleRockSpell());
+        }
+
+        IEnumerator HandleRockSpell()
+        {
+            myAnimator.SetTrigger("spell");
+            yield return new WaitForSeconds(0.2f);
+            Instantiate(rockProjectile, spellPosition.transform.position, Quaternion.identity);
+
         }
 
         void UpdateMelee()
