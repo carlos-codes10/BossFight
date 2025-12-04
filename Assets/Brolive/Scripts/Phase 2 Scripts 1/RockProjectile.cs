@@ -19,7 +19,7 @@ public class RockProjectile : MonoBehaviour
     void Update()
     {
         float elpased =+ Time.deltaTime;
-        transform.Translate(Speed * Time.deltaTime * Vector3.right);
+        transform.Translate(Speed * Time.deltaTime * Vector3.forward);
 
         if(elpased > rockDeath)
         {

@@ -48,7 +48,7 @@ namespace brolive
             myStateMachine = new StateMachine(this);
             myStateMachinePhase2 = new StateMachine(this);
             myStateMachine.ChangeState(new EnemyIdleState(myStateMachine));
-            myStateMachinePhase2.ChangeState(new EnemyIdleState2(myStateMachine));
+            myStateMachinePhase2.ChangeState(new EnemyIdleState2(myStateMachinePhase2));
         }
 
         // Update is called once per frame
@@ -247,6 +247,12 @@ namespace brolive
             targetVelocity = Vector3.zero;
             GameManager.instance.GoToNextLevel();
             state = EnemyStates.dead;
+        }
+
+        public int GetCase()
+        {
+            int rndNum = Random.Range(1, 3);
+            return rndNum;
         }
 
         void UpdateDead()

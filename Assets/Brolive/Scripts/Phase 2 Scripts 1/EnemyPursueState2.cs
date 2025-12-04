@@ -5,7 +5,6 @@ namespace Carlos
     public class EnemyPursueState2 : State
     {
         int CASE;
-        int count = 0;
 
         public EnemyPursueState2(StateMachine m) : base(m) 
         { 
@@ -14,10 +13,8 @@ namespace Carlos
 
         public override void OnEnter()
         {
-            CASE = Random.Range(1, 3);
-            Debug.Log("CASE NUMBER ATTACK: " + CASE);
-
-            count = 0;
+            CASE = machine.enemy.GetCase();
+            Debug.Log("CASE NUMBER: " + CASE);
             machine.enemy.AttemptBeginPursue(elapsedTime);
             machine.enemy.MagnitudeWalk();
         }

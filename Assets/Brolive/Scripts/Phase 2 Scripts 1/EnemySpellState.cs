@@ -19,9 +19,7 @@ namespace Carlos
         public override void OnUpdate()
         {
             base.OnUpdate();
-
-            if (elapsedTime > 0.5f)
-                machine.ChangeState(new EnemyIdleState2(machine));
+            machine.ChangeState(new EnemyIdleState2(machine));
 
         }
 
