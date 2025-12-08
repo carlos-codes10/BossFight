@@ -18,7 +18,10 @@ namespace brolive
         [SerializeField] Animator myAnimator;
         [SerializeField] Damageable damageable;
         [SerializeField] GameObject spellPosition;
+        [SerializeField] GameObject spellPositionPhase3;
         [SerializeField] GameObject rockProjectile;
+        [SerializeField] GameObject rockProjectilePhase3;
+        [SerializeField] ParticleSystem myParticleSys;
 
         Navigator navigator;
         Transform _transform;
@@ -32,10 +35,13 @@ namespace brolive
         Vector3 targetVelocity;
         public bool inMeleeRange = false;
         bool canMove;
+        bool phase2 = false;
+        bool phase3 = false;    
 
 
         StateMachine myStateMachine;
         StateMachine myStateMachinePhase2;
+        StateMachine myStateMachinePhase3;
         Vector3 magDirection;
 
         // Start is called before the first frame update
@@ -45,10 +51,17 @@ namespace brolive
             player = FindObjectOfType<PlayerLogic>().transform;
             _rigidbody = GetComponent<Rigidbody>();
             _transform = transform;
+
             myStateMachine = new StateMachine(this);
             myStateMachinePhase2 = new StateMachine(this);
+            myStateMachinePhase3 = new StateMachine(this); 
+            
             myStateMachine.ChangeState(new EnemyIdleState(myStateMachine));
             myStateMachinePhase2.ChangeState(new EnemyIdleState2(myStateMachinePhase2));
+            myStateMachinePhase3.ChangeState(new EnemyPursueState3(myStateMachinePhase3));
+
+            myParticleSys.Stop();
+            //GetComponent<Phase3Helper>().enabled = false;
         }
 
         // Update is called once per frame
@@ -56,40 +69,40 @@ namespace brolive
         {
             currentStateElapsed += Time.deltaTime;
 
-            /*switch (state)
-            {
-                case EnemyStates.idle:
-                    UpdateIdle();
-                    break;
-                case EnemyStates.melee:
-                    UpdateMelee();
-                    break;
-                case EnemyStates.pursue:
-                    UpdatePursue();
-                    break;
-                case EnemyStates.ranged:
-                    break;
-                case EnemyStates.dead:
-                    UpdateDead();
-                    break;
-            }*/
+
             if ( damageable.currentHealth > 31)
             {
                 myStateMachine.Update();
-                Debug.Log("BOSS PHASE 1");
+
             }
-            else if (damageable.currentHealth <= 30)
+            else if (damageable.currentHealth <= 30 && damageable.currentHealth > 14)
             {
+                if (!phase2)
+                {
+                    InitializePhase2();
+                    phase2 = true;
+                }
+
                 myStateMachinePhase2.Update();
-                Debug.Log("BOSS PHASE 2");
             }
+            else
+            {
+                if(!phase3)
+                {
+                    InitializePhase3();
+                    phase3 = true;
+                }
+
+                myStateMachinePhase3.Update();
+            }
+
                 myAnimator.SetFloat("walkSpeed", magDirection.magnitude);
+
         }
 
         private void FixedUpdate()
         {
             _rigidbody.linearVelocity = targetVelocity;
-
         }
 
         /*void UpdateIdle()
@@ -134,7 +147,7 @@ namespace brolive
                 dirToNode.y = 0;
                 dirToNode.Normalize();
 
-                _transform.forward = dirToNode;
+            _transform.forward = dirToNode;
 
                 float distToNode = Vector3.Distance(currentTargetNodePosition, _transform.position);
 
@@ -170,6 +183,17 @@ namespace brolive
                     AttemptMakePathToPlayer();
                 }
             
+        }
+        void InitializePhase2()
+        {
+            speed = speed * 1.75f;
+
+        }
+        void InitializePhase3()
+        {
+            speed = speed * 3f;
+            myParticleSys.Play();
+
         }
 
         public void TurnToPlayer()
@@ -229,6 +253,19 @@ namespace brolive
             myAnimator.SetTrigger("spell");
             yield return new WaitForSeconds(0.2f);
             Instantiate(rockProjectile, spellPosition.transform.position, Quaternion.identity);
+
+        }
+
+        public void CastRockSpellPhase3()
+        {
+            StartCoroutine(HandleRockSpellPhase3());
+            Debug.LogWarning("CASTED ROCK PHASE 3!!!!!");
+        }
+
+        IEnumerator HandleRockSpellPhase3()
+        {
+            Instantiate(rockProjectilePhase3, spellPositionPhase3.transform.position, Quaternion.identity);
+            yield return new WaitForSeconds(1f);
 
         }
 

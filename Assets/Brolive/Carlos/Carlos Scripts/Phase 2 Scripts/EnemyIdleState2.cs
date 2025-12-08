@@ -20,7 +20,7 @@ namespace Carlos
         {
             base.OnUpdate();
 
-            if (elapsedTime > 2.0f)
+            if (elapsedTime > 1.0f)
             {
                 if (machine.enemy.inMeleeRange)
                 {
